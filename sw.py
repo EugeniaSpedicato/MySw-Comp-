@@ -108,28 +108,6 @@ axL[3,1].set_xlabel('phi',  fontsize = 16, color = 'black', alpha = 1)
 
 #plt.show()
 
-""" axes[0,1]
-axes[1,0]
-axes[1,1]
-axes[2,0]
-axes[2,1]
-axes[3,0]
-axes[3,1]
-4,2,
-                          column=["lepton 1 pT", "lepton 1 eta", "lepton 1 phi",
-                        "lepton 2 pT", "lepton 2 eta", "lepton 2 phi",
-                        "missing energy magnitude", "missing energy phi"],
-                          by = "class label", # separate the data by this value. Creates a separate distribution for each one.
-                          ylim = 'own', 
-                          figsize = (12,8), 
-                          legend = True, 
-                          color = ['#f4cccc', '#0c343d'], 
-                          alpha = 0.4 """
-
-
-
-
-
 
 class_counts= df.groupby('class label').size()
 #print(class_counts)
