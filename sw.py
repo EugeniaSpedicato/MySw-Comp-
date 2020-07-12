@@ -140,9 +140,9 @@ from sklearn.tree import DecisionTreeClassifier
 
 tree_all= DecisionTreeClassifier()
 tree_all.fit(x_train, y_train)
-print(tree_all)
-y_pred_test = tree_all.predict_proba(x_test)
-print(y_pred_test)
+
+#y_pred_test = tree_all.predict_proba(x_test)
+
 
 
 
