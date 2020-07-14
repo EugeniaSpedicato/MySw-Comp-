@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import mean_squared_error
 import matplotlib
 import matplotlib.pyplot as plt
 import joypy
@@ -112,6 +114,8 @@ axL[3,1].set_xlabel('phi',  fontsize = 16, color = 'black', alpha = 1)
 class_counts= df.groupby('class label').size()
 #print(class_counts)
 
+
+
 #all
 x_train, x_test, y_train, y_test = train_test_split(x,y,
                             test_size=0.4,
@@ -133,17 +137,43 @@ xH_train, xH_test, y_train, y_test = train_test_split(x_high,y,
                             test_size=0.4,
                              random_state=42,stratify=y)
 
+scaler = StandardScaler()
+x_train = scaler.fit_transform(x_train)
+x_test = scaler.transform(x_test)
 
-from sklearn.tree import DecisionTreeClassifier
+xL_train = scaler.fit_transform(xL_train)
+xL_test = scaler.transform(xL_test)
+
+xH_train = scaler.fit_transform(xH_train)
+xH_test = scaler.transform(xH_test)          
+
+import xgboost as xgb
 
 #I need to find the best depth for the tree hence i first leav it default such that the model will decide it. Then i try with others comparing with the results on the test set to understand if it is over or under fitting.
+dtrain = xgb.DMatrix(x_train,y_train)
+dtest = xgb.DMatrix(x_test,y_test)
 
-tree_all= DecisionTreeClassifier()
-tree_all.fit(x_train, y_train)
+evallist = [(dtest, 'eval'), (dtrain, 'train')]
+param = {'max_depth': 10, 'eta': 0.3}
+param['objective'] ='binary:logistic' #good for classification
+param['eval_metric'] = "auc" #rmse,roc. This evaluate how good the model is. AUC ranges in value from 0 to 1. A model whose predictions are 100% wrong has an AUC of 0.0; one whose predictions are 100% correct has an AUC of 1.0.
+num_round = 10 #low eta means larger num_round
+bst = xgb.train(param, dtrain, num_round, evallist)
+""" 
+model= xgb.XGBClassifier()
+model.fit(x_train,y_train)
+print(model)
 
-#y_pred_test = tree_all.predict_proba(x_test)
+y_pred=model.predict(x_test)
+prediction = [round(value) for value in y_pred]
 
+rmse = np.sqrt(mean_squared_error(y_test, prediction))
+print("RMSE: %f" % (rmse))
 
+# evaluate predictions
+accuracy = accuracy_score(y_test, prediction)
+print("Accuracy: %.2f%%" % (accuracy * 100.0))
+"""
 
 
 
@@ -160,15 +190,6 @@ tree_all.fit(x_train, y_train)
 """ 
 from keras.models import Sequential
 from keras.layers import Dense, Dropout 
-#scaler = StandardScaler()
-x_train = scaler.fit_transform(x_train)
-x_test = scaler.transform(x_test)
-scaler = StandardScaler()
-xL_train = scaler.fit_transform(xL_train)
-xL_test = scaler.transform(xL_test)
-scaler = StandardScaler()
-xH_train = scaler.fit_transform(xH_train)
-xH_test = scaler.transform(xH_test)
 # Hyperparameters
 #training_epochs = 1000 # Total number of training epochs
 #learning_rate = 0.01 # The learning rate
