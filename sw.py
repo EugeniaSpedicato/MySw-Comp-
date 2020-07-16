@@ -149,7 +149,7 @@ xH_test = scaler.transform(xH_test)
 
 import xgboost as xgb
 
-#I need to find the best depth for the tree hence i first leav it default such that the model will decide it. Then i try with others comparing with the results on the test set to understand if it is over or under fitting.
+#I need to find the best depth for the tree hence i first leave it default such that the model will decide it. Then i try with others comparing with the results on the test set to understand if it is over or under fitting.
 dtrain = xgb.DMatrix(x_train,y_train)
 dtest = xgb.DMatrix(x_test,y_test)
 
@@ -159,6 +159,14 @@ param['objective'] ='binary:logistic' #good for classification
 param['eval_metric'] = "auc" #rmse,roc. This evaluate how good the model is. AUC ranges in value from 0 to 1. A model whose predictions are 100% wrong has an AUC of 0.0; one whose predictions are 100% correct has an AUC of 1.0.
 num_round = 10 #low eta means larger num_round
 bst = xgb.train(param, dtrain, num_round, evallist)
+
+# make prediction
+preds = bst.predict(dtest)
+ 
+# print accuracy score
+print(np.round(accuracy_score(y_test, preds)*100, 2), '%')
+
+
 """ 
 model= xgb.XGBClassifier()
 model.fit(x_train,y_train)
