@@ -148,26 +148,32 @@ xH_train = scaler.fit_transform(xH_train)
 xH_test = scaler.transform(xH_test)          
 
 import xgboost as xgb
-
+ 
 #I need to find the best depth for the tree hence i first leave it default such that the model will decide it. Then i try with others comparing with the results on the test set to understand if it is over or under fitting.
+
+
+#i will use early stopping in order to see the ideal number of n_rounds. After early_stopping_rounds without improvements, the train will stop
 dtrain = xgb.DMatrix(x_train,y_train)
 dtest = xgb.DMatrix(x_test,y_test)
 
 evallist = [(dtest, 'eval'), (dtrain, 'train')]
 param = {'max_depth': 10, 'eta': 0.3}
 param['objective'] ='binary:logistic' #good for classification
-param['eval_metric'] = "auc" #rmse,roc. This evaluate how good the model is. AUC ranges in value from 0 to 1. A model whose predictions are 100% wrong has an AUC of 0.0; one whose predictions are 100% correct has an AUC of 1.0.
-num_round = 10 #low eta means larger num_round
-bst = xgb.train(param, dtrain, num_round, evallist)
+param['eval_metric'] = "error" #auc,rmse,roc. This evaluate how good the model is. AUC ranges in value from 0 to 1. A model whose predictions are 100% wrong has an AUC of 0.0; one whose predictions are 100% correct has an AUC of 1.0.
+num_round = 70 #low eta means larger num_round
+bst = xgb.train(param, dtrain, num_round, evallist,early_stopping_rounds=8)
+
+print("Best error: {:.3f} with {} rounds".format(
+                 bst.best_score,
+                 bst.best_iteration+1))
 
 # make prediction
-preds = bst.predict(dtest)
- 
+#preds = bst.predict(dtest)
+
 # print accuracy score
-print(np.round(accuracy_score(y_test, preds)*100, 2), '%')
+#print(np.round(accuracy_score(y_test, preds)*100, 2), '%')
+"""
 
-
-""" 
 model= xgb.XGBClassifier()
 model.fit(x_train,y_train)
 print(model)
@@ -181,14 +187,33 @@ print("RMSE: %f" % (rmse))
 # evaluate predictions
 accuracy = accuracy_score(y_test, prediction)
 print("Accuracy: %.2f%%" % (accuracy * 100.0))
-"""
 
 
 
 
 
 
+#try cross validation to estimate the performance of the set of parameters i have choosen
 
+cvmatrix = xgb.DMatrix(x,y)
+
+param_cv = {'max_depth': 10, 'eta': 0.1}
+param_cv['objective'] ='binary:logistic'
+param_cv['eval_metric'] = "error"
+
+cross_val= xgb.cv(
+    params=param_cv,
+    dtrain=cvmatrix,
+    nfold=3,
+    num_boost_round=10,
+    metrics='error',
+    as_pandas=True)
+
+print(cross_val.head())
+""" 
+
+
+#In order to tune the other hyperparameters, we will use the cv function to run cross-validation on our training dataset 
 
 
 
