@@ -148,16 +148,15 @@ xH_train = scaler.fit_transform(xH_train)
 xH_test = scaler.transform(xH_test)          
 
 import xgboost as xgb
- 
-#I need to find the best depth for the tree hence i first leave it default such that the model will decide it. Then i try with others comparing with the results on the test set to understand if it is over or under fitting.
 
-
-#i will use early stopping in order to see the ideal number of n_rounds. After early_stopping_rounds without improvements, the train will stop
+#i will use early stopping in order to see the ideal number of n_rounds. 
+# After early_stopping_rounds without improvements, the train will stop
 dtrain = xgb.DMatrix(x_train,y_train)
 dtest = xgb.DMatrix(x_test,y_test)
 
+""" 
 evallist = [(dtest, 'eval'), (dtrain, 'train')]
-param = {'max_depth': 10, 'eta': 0.3}
+param = {'max_depth': 10, 'eta': 0.2}
 param['objective'] ='binary:logistic' #good for classification
 param['eval_metric'] = "error" #auc,rmse,roc. This evaluate how good the model is. AUC ranges in value from 0 to 1. A model whose predictions are 100% wrong has an AUC of 0.0; one whose predictions are 100% correct has an AUC of 1.0.
 num_round = 70 #low eta means larger num_round
@@ -172,48 +171,71 @@ print("Best error: {:.3f} with {} rounds".format(
 
 # print accuracy score
 #print(np.round(accuracy_score(y_test, preds)*100, 2), '%')
-"""
-
-model= xgb.XGBClassifier()
-model.fit(x_train,y_train)
-print(model)
-
-y_pred=model.predict(x_test)
-prediction = [round(value) for value in y_pred]
-
-rmse = np.sqrt(mean_squared_error(y_test, prediction))
-print("RMSE: %f" % (rmse))
-
-# evaluate predictions
-accuracy = accuracy_score(y_test, prediction)
-print("Accuracy: %.2f%%" % (accuracy * 100.0))
-
-
-
-
-
-
-#try cross validation to estimate the performance of the set of parameters i have choosen
-
-cvmatrix = xgb.DMatrix(x,y)
-
-param_cv = {'max_depth': 10, 'eta': 0.1}
-param_cv['objective'] ='binary:logistic'
-param_cv['eval_metric'] = "error"
-
-cross_val= xgb.cv(
-    params=param_cv,
-    dtrain=cvmatrix,
-    nfold=3,
-    num_boost_round=10,
-    metrics='error',
-    as_pandas=True)
-
-print(cross_val.head())
-""" 
-
 
 #In order to tune the other hyperparameters, we will use the cv function to run cross-validation on our training dataset 
+
+
+cross_val = xgb.cv(
+    param,
+    dtrain,
+    num_boost_round=num_round,
+    seed=42,
+    nfold=5,
+    metrics={'error'},
+    early_stopping_rounds=8
+)
+
+print(cross_val.head())
+print(cross_val['test-error-mean'].min())
+ """
+
+# I need to find the best parameters in order
+# to have the best model which minimize the error
+# to do that i perform cv trying different values of parameters
+# in selected ranges.
+# i start searching for max_depth, min_child_weight which helps in fixing the complexity and controlling
+# overfit of the model.
+param = { }
+param['objective'] ='binary:logistic' #good for classification
+param['eval_metric'] = "error"
+num_round = 70
+
+gridsearch_params = [
+    (max_depth, min_child_weight)
+    for max_depth in range(7,12) # i saw that 15 makes it to overfit
+    for min_child_weight in range(5,8)
+]
+# Define initial best params and error
+min_err = float("Inf")
+best_params = None
+for max_depth, min_child_weight in gridsearch_params:
+    print("CV with max_depth={}, min_child_weight={}".format(
+                             max_depth,
+                             min_child_weight))
+# Update our parameters
+    param['max_depth'] = max_depth
+    param['min_child_weight'] = min_child_weight
+# Run CV
+    cv_results = xgb.cv(
+        param,
+        dtrain,
+        num_boost_round=num_round,
+        seed=42,
+        nfold=5,
+        metrics={'error'},
+        early_stopping_rounds=8
+    )
+# Update best error
+    mean_err = cv_results['test-error-mean'].min()
+    boost_rounds = cv_results['test-error-mean'].argmin()
+    print("\tError: {} for {} rounds".format(mean_err, boost_rounds))
+    if mean_err < min_err:
+        min_err = mean_err
+        best_params = (max_depth,min_child_weight)
+print("Best params: {}, {}, Error: {}".format(best_params[0], best_params[1], min_err))
+
+
+
 
 
 
