@@ -154,15 +154,15 @@ import xgboost as xgb
 dtrain = xgb.DMatrix(x_train,y_train)
 dtest = xgb.DMatrix(x_test,y_test)
 
-""" 
-evallist = [(dtest, 'eval'), (dtrain, 'train')]
-param = {'max_depth': 10, 'eta': 0.2}
-param['objective'] ='binary:logistic' #good for classification
-param['eval_metric'] = "error" #auc,rmse,roc. This evaluate how good the model is. AUC ranges in value from 0 to 1. A model whose predictions are 100% wrong has an AUC of 0.0; one whose predictions are 100% correct has an AUC of 1.0.
-num_round = 70 #low eta means larger num_round
-bst = xgb.train(param, dtrain, num_round, evallist,early_stopping_rounds=8)
 
-print("Best error: {:.3f} with {} rounds".format(
+evallist = [(dtest, 'eval'), (dtrain, 'train')]
+param = {'max_depth': 9, 'eta': 0.2, "min_child_weight": 7}
+param['objective'] ='binary:logistic' #good for classification
+param['eval_metric'] = "auc" #auc,rmse,roc. This evaluate how good the model is. AUC ranges in value from 0 to 1. A model whose predictions are 100% wrong has an AUC of 0.0; one whose predictions are 100% correct has an AUC of 1.0.
+num_round = 70 #low eta means larger num_round
+bst = xgb.train(param, dtrain, num_round, evallist,early_stopping_rounds=6)
+
+print("Best AUC: {:.3f} with {} rounds".format(
                  bst.best_score,
                  bst.best_iteration+1))
 
@@ -175,19 +175,8 @@ print("Best error: {:.3f} with {} rounds".format(
 #In order to tune the other hyperparameters, we will use the cv function to run cross-validation on our training dataset 
 
 
-cross_val = xgb.cv(
-    param,
-    dtrain,
-    num_boost_round=num_round,
-    seed=42,
-    nfold=5,
-    metrics={'error'},
-    early_stopping_rounds=8
-)
 
-print(cross_val.head())
-print(cross_val['test-error-mean'].min())
- """
+""" CV MAX DEPTH AND CHILD WEIGHT
 
 # I need to find the best parameters in order
 # to have the best model which minimize the error
@@ -202,8 +191,8 @@ num_round = 70
 
 gridsearch_params = [
     (max_depth, min_child_weight)
-    for max_depth in range(7,12) # i saw that 15 makes it to overfit
-    for min_child_weight in range(5,8)
+    for max_depth in range(8,11) # i saw that 15 makes it to overfit, after some rounds the error starts to increase
+    for min_child_weight in range(6,8)
 ]
 # Define initial best params and error
 min_err = float("Inf")
@@ -221,9 +210,9 @@ for max_depth, min_child_weight in gridsearch_params:
         dtrain,
         num_boost_round=num_round,
         seed=42,
-        nfold=5,
+        nfold=3, # 5 was too long, choose this beacause the sample is large and it takes too much time
         metrics={'error'},
-        early_stopping_rounds=8
+        early_stopping_rounds=6
     )
 # Update best error
     mean_err = cv_results['test-error-mean'].min()
@@ -232,17 +221,45 @@ for max_depth, min_child_weight in gridsearch_params:
     if mean_err < min_err:
         min_err = mean_err
         best_params = (max_depth,min_child_weight)
-print("Best params: {}, {}, Error: {}".format(best_params[0], best_params[1], min_err))
+print("Best params: {}, {}, Error: {}".format(best_params[0], best_params[1], min_err)) """
+
+
+
+""" min_err = float("Inf")
+best_params = None
+
+for eta in [.3, .2, .1, .05]:
+    print("CV with eta={}".format(eta))
+    # We update our parameters
+    param = { }
+    param['objective'] ='binary:logistic' #good for classification
+    param['eval_metric'] = "error"
+    param['eta'] = eta
+    # Run and time CV
+    cv_results = xgb.cv(
+            param,
+            dtrain,
+            num_boost_round=70,
+            seed=42,
+            nfold=3,
+            metrics=['error'],
+            early_stopping_rounds=6
+          )
+    # Update best score
+    mean_err = cv_results['test-error-mean'].min()
+    boost_rounds = cv_results['test-error-mean'].argmin()
+    print("\tError {} for {} rounds\n".format(mean_err, boost_rounds))
+    if mean_err < min_err:
+        min_err = mean_err
+        best_params = eta
+print("Best params: {}, MAE: {}".format(best_params, min_err)) """
 
 
 
 
 
 
-
-
-
-""" 
+""" NEURAL NETWORK
 from keras.models import Sequential
 from keras.layers import Dense, Dropout 
 # Hyperparameters
