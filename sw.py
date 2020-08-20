@@ -64,8 +64,7 @@ y = df["class label"].values
 
 plt.figure(figsize=[70, 56])
 
-
-fig, axL = plt.subplots(4,2)
+""" fig, axL = plt.subplots(4,2)
 axL[0,0].hist(x[:,1][y==0], density=True,histtype='step', bins=70, label='Background')
 axL[0,0].hist(x[:,1][y==1], density=True,histtype='step', bins=70, label='Signal')
 axL[0,0].set_title("pT1 sig and bkg", fontsize = 16, color = 'black', alpha = .5)                        
@@ -106,7 +105,8 @@ axL[3,0].set_xlabel('E',  fontsize = 16, color = 'black', alpha = 1)
 axL[3,1].hist(x[:,8][y==0], density=True,histtype='step', bins=70, label='Background')
 axL[3,1].hist(x[:,8][y==1], density=True,histtype='step', bins=70, label='Signal')
 axL[3,1].set_title("missing energy phi sig and bkg", fontsize = 16, color = 'black', alpha = .5)                        
-axL[3,1].set_xlabel('phi',  fontsize = 16, color = 'black', alpha = 1)
+axL[3,1].set_xlabel('phi',  fontsize = 16, color = 'black', alpha = 1) """
+
 
 #plt.show()
 
@@ -155,6 +155,7 @@ dtrain = xgb.DMatrix(x_train,y_train)
 dtest = xgb.DMatrix(x_test,y_test)
 
 
+""" 
 evallist = [(dtest, 'eval'), (dtrain, 'train')]
 param = {'max_depth': 9, 'eta': 0.2, "min_child_weight": 7}
 param['objective'] ='binary:logistic' #good for classification
@@ -164,8 +165,7 @@ bst = xgb.train(param, dtrain, num_round, evallist,early_stopping_rounds=6)
 
 print("Best AUC: {:.3f} with {} rounds".format(
                  bst.best_score,
-                 bst.best_iteration+1))
-
+                 bst.best_iteration+1)) """
 # make prediction
 #preds = bst.predict(dtest)
 
@@ -225,15 +225,17 @@ print("Best params: {}, {}, Error: {}".format(best_params[0], best_params[1], mi
 
 
 
-""" min_err = float("Inf")
+min_err = float("Inf")
 best_params = None
 
 for eta in [.3, .2, .1, .05]:
     print("CV with eta={}".format(eta))
     # We update our parameters
-    param = { }
+    param={}
     param['objective'] ='binary:logistic' #good for classification
     param['eval_metric'] = "error"
+    param['max_depth'] = 9
+    param['min_child_weight'] = 6
     param['eta'] = eta
     # Run and time CV
     cv_results = xgb.cv(
@@ -252,7 +254,7 @@ for eta in [.3, .2, .1, .05]:
     if mean_err < min_err:
         min_err = mean_err
         best_params = eta
-print("Best params: {}, MAE: {}".format(best_params, min_err)) """
+print("Best params: {}, MAE: {}".format(best_params, min_err))
 
 
 
