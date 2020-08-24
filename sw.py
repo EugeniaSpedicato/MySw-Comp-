@@ -62,8 +62,6 @@ x_high = x_high.values
 #target
 y = df["class label"].values
 
-plt.figure(figsize=[70, 56])
-
 """ fig, axL = plt.subplots(4,2)
 axL[0,0].hist(x[:,1][y==0], density=True,histtype='step', bins=70, label='Background')
 axL[0,0].hist(x[:,1][y==1], density=True,histtype='step', bins=70, label='Signal')
@@ -121,41 +119,58 @@ x_train, x_test, y_train, y_test = train_test_split(x,y,
                             test_size=0.4,
                              random_state=42,stratify=y)
 
+x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=0.2, random_state=42)
+
 
 
 #low-level
-xL_train, xL_test, y_train, y_test = train_test_split(x_low,y,
+xL_train, xL_test, yL_train, yL_test = train_test_split(x_low,y,
                             test_size=0.4,
                              random_state=42,stratify=y)
-
-
+xL_train, xL_val, yL_train, yL_val = train_test_split(xL_train, yL_train, test_size=0.2, random_state=42)
 
 
 
 #high-level
-xH_train, xH_test, y_train, y_test = train_test_split(x_high,y,
+xH_train, xH_test, yH_train, yH_test = train_test_split(x_high,y,
                             test_size=0.4,
                              random_state=42,stratify=y)
+xH_train, xH_val, yH_train, yH_val = train_test_split(xH_train, yH_train, test_size=0.2, random_state=42)
 
 scaler = StandardScaler()
 x_train = scaler.fit_transform(x_train)
+x_val = scaler.transform(x_val)
 x_test = scaler.transform(x_test)
 
 xL_train = scaler.fit_transform(xL_train)
+xL_val = scaler.transform(xL_val)
 xL_test = scaler.transform(xL_test)
 
 xH_train = scaler.fit_transform(xH_train)
-xH_test = scaler.transform(xH_test)          
+xH_val = scaler.transform(xH_val)
+xH_test = scaler.transform(xH_test)
 
-import xgboost as xgb
+# I use xgboost to build up my model, hence i build two matrices for train and test.
+dtrain = xgb.DMatrix(x_train,y_train)
+dval = xgb.DMatrix(x_val,y_val)
+dtest = xgb.DMatrix(x_test,y_test)
+
+dtrainL = xgb.DMatrix(xL_train,yL_train)
+dvalL = xgb.DMatrix(xL_val,yL_val)
+dtestL = xgb.DMatrix(xL_test,yL_test)
+
+dtrainH = xgb.DMatrix(xH_train,yH_train)
+dvalH = xgb.DMatrix(xH_val,yH_val)
+dtestH = xgb.DMatrix(xH_test,yH_test)
+
+
+""" 
+
 
 #i will use early stopping in order to see the ideal number of n_rounds. 
 # After early_stopping_rounds without improvements, the train will stop
 dtrain = xgb.DMatrix(x_train,y_train)
 dtest = xgb.DMatrix(x_test,y_test)
-
-
-""" 
 evallist = [(dtest, 'eval'), (dtrain, 'train')]
 param = {'max_depth': 9, 'eta': 0.2, "min_child_weight": 7}
 param['objective'] ='binary:logistic' #good for classification
@@ -223,9 +238,7 @@ for max_depth, min_child_weight in gridsearch_params:
         best_params = (max_depth,min_child_weight)
 print("Best params: {}, {}, Error: {}".format(best_params[0], best_params[1], min_err)) """
 
-
-
-min_err = float("Inf")
+""" min_err = float("Inf")
 best_params = None
 
 for eta in [.3, .2, .1, .05]:
@@ -254,29 +267,42 @@ for eta in [.3, .2, .1, .05]:
     if mean_err < min_err:
         min_err = mean_err
         best_params = eta
-print("Best params: {}, MAE: {}".format(best_params, min_err))
+print("Best params: {}, MAE: {}".format(best_params, min_err)) """
+
+
+# NEURAL NETWORK
+#In order to diminuish the time of searching of hyperparameters, given the high number of data and variables, i will use randomized searche more than others because in  most of the casese, the same accuracy is reached in less time
 
 
 
 
-
-
-""" NEURAL NETWORK
 from keras.models import Sequential
 from keras.layers import Dense, Dropout 
 # Hyperparameters
-#training_epochs = 1000 # Total number of training epochs
-#learning_rate = 0.01 # The learning rate
+training_epochs = 1000 # Total number of training epochs
+learning_rate = 0.01 # The learning rate
 
-#set low-level
-#model = Sequential()
+model = Sequential()
 
-#model.add(Dense(units=300, activation="tanh",input_dim=8))
-#model.add(Dense(units=2, activation="tanh"))
+model.add(Dense(units=300, activation="tanh",input_dim=18))
+model.add(Dense(units=2, activation="tanh"))
 
-#model.summary()
+model.summary()
 
-#from ann_visualizer.visualize import ann_viz;
-#ann_viz(model, view=True, filename="network.gv", title="Shallow Network")
+from ann_visualizer.visualize import ann_viz;
+ann_viz(model, view=True, filename="network.gv", title="Shallow Network")
 
-#model.compile(optimizer="none", loss='categorical_crossentropy')"""
+model.compile(optimizer="none", loss='categorical_crossentropy')
+
+# tune the hyperparameters via a randomized search
+grid = RandomizedSearchCV(model, params)
+start = time.time()
+grid.fit(trainData, trainLabels)
+# evaluate the best randomized searched model on the testing
+# data
+print("[INFO] randomized search took {:.2f} seconds".format(
+	time.time() - start))
+acc = grid.score(x_train, y_train)
+print("[INFO] grid search accuracy: {:.2f}%".format(acc * 100))
+print("[INFO] randomized search best parameters: {}".format(
+	grid.best_params_))
