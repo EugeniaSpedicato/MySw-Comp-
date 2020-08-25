@@ -8,6 +8,11 @@ from sklearn.metrics import mean_squared_error
 import matplotlib
 import matplotlib.pyplot as plt
 import joypy
+import time
+from sklearn.model_selection import RandomizedSearchCV
+from keras.wrappers.scikit_learn import KerasClassifier
+from keras.models import Sequential
+from keras.layers import Dense, Dropout 
 
 names=["class label", "lepton 1 pT", "lepton 1 eta", "lepton 1 phi",
                      "lepton 2 pT", "lepton 2 eta", "lepton 2 phi",
@@ -122,7 +127,6 @@ x_train, x_test, y_train, y_test = train_test_split(x,y,
 x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size=0.2, random_state=42)
 
 
-
 #low-level
 xL_train, xL_test, yL_train, yL_test = train_test_split(x_low,y,
                             test_size=0.4,
@@ -150,6 +154,10 @@ xH_train = scaler.fit_transform(xH_train)
 xH_val = scaler.transform(xH_val)
 xH_test = scaler.transform(xH_test)
 
+
+
+
+""" 
 # I use xgboost to build up my model, hence i build two matrices for train and test.
 dtrain = xgb.DMatrix(x_train,y_train)
 dval = xgb.DMatrix(x_val,y_val)
@@ -162,10 +170,6 @@ dtestL = xgb.DMatrix(xL_test,yL_test)
 dtrainH = xgb.DMatrix(xH_train,yH_train)
 dvalH = xgb.DMatrix(xH_val,yH_val)
 dtestH = xgb.DMatrix(xH_test,yH_test)
-
-
-""" 
-
 
 #i will use early stopping in order to see the ideal number of n_rounds. 
 # After early_stopping_rounds without improvements, the train will stop
@@ -275,34 +279,66 @@ print("Best params: {}, MAE: {}".format(best_params, min_err)) """
 
 
 
-
 from keras.models import Sequential
 from keras.layers import Dense, Dropout 
+from ann_visualizer.visualize import ann_viz
 # Hyperparameters
-training_epochs = 1000 # Total number of training epochs
-learning_rate = 0.01 # The learning rate
+""" def build_classifier(optimizer, units):
 
-model = Sequential()
+    NN=Sequential()
 
-model.add(Dense(units=300, activation="tanh",input_dim=18))
-model.add(Dense(units=2, activation="tanh"))
+    NN.add(Dense(units=units, activation="sigmoid", kernel_initializer="random_uniform", input_dim=18))
+    NN.add(Dense(units=1, activation="sigmoid", kernel_initializer="random_uniform"))
 
-model.summary()
+    NN.summary()
 
-from ann_visualizer.visualize import ann_viz;
-ann_viz(model, view=True, filename="network.gv", title="Shallow Network")
+    
 
-model.compile(optimizer="none", loss='categorical_crossentropy')
+    NN.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['AUC'])
+    return NN
+
+
+#ann_viz(NN, view=True, filename="network.gv", title="Shallow Network")
+NN = KerasClassifier(build_fn=build_classifier)
+
+parameters ={#'batch_size':[5,10],
+            'nb_epoch':[10,20,50],
+            'optimizer':['adam','rmsprop','SGD'],
+            'units':[300, 1000, 2000, 10000],
+            #'learning_rate': [0.05, 0.005, 0.0005]
+            }
+
+grid_rndm= RandomizedSearchCV(estimator=NN, param_distributions=parameters, scoring='roc_auc', n_iter=20, n_jobs=-1, cv=3)
 
 # tune the hyperparameters via a randomized search
-grid = RandomizedSearchCV(model, params)
 start = time.time()
-grid.fit(trainData, trainLabels)
+grid_rndm.fit(x_train, y_train)
 # evaluate the best randomized searched model on the testing
 # data
 print("[INFO] randomized search took {:.2f} seconds".format(
 	time.time() - start))
-acc = grid.score(x_train, y_train)
+acc = grid_rndm.score(x_train, y_train)
 print("[INFO] grid search accuracy: {:.2f}%".format(acc * 100))
 print("[INFO] randomized search best parameters: {}".format(
-	grid.best_params_))
+	grid_rndm.best_params_)) 
+
+ """
+
+
+# Hyperparameters
+
+model = Sequential()
+
+model.add(Dense(units=10000, activation="sigmoid",input_dim=18))
+model.add(Dense(units=1, activation="sigmoid"))
+
+model.summary()
+
+from ann_visualizer.visualize import ann_viz
+ann_viz(model, view=True, filename="network.gv", title="Shallow Network")
+
+model.compile(optimizer="adam", loss='binary_crossentropy', metrics="AUC")
+
+model.fit(x_train,y_train)
+
+ 
