@@ -287,7 +287,7 @@ from ann_visualizer.visualize import ann_viz
 
     NN=Sequential()
 
-    NN.add(Dense(units=units, activation="sigmoid", kernel_initializer="random_uniform", input_dim=18))
+    NN.add(Dense(units=units, activation="relu", kernel_initializer="random_uniform", input_dim=18))
     NN.add(Dense(units=1, activation="sigmoid", kernel_initializer="random_uniform"))
 
     NN.summary()
@@ -298,14 +298,14 @@ from ann_visualizer.visualize import ann_viz
     return NN
 
 
-#ann_viz(NN, view=True, filename="network.gv", title="Shallow Network")
+
 NN = KerasClassifier(build_fn=build_classifier)
 
-parameters ={#'batch_size':[5,10],
+parameters ={'batch_size':[32,64],
             'nb_epoch':[10,20,50],
             'optimizer':['adam','rmsprop','SGD'],
             'units':[300, 1000, 2000, 10000],
-            #'learning_rate': [0.05, 0.005, 0.0005]
+            'learning_rate': [0.05, 0.005, 0.0005]
             }
 
 grid_rndm= RandomizedSearchCV(estimator=NN, param_distributions=parameters, scoring='roc_auc', n_iter=20, n_jobs=-1, cv=3)
@@ -329,7 +329,7 @@ print("[INFO] randomized search best parameters: {}".format(
 
 model = Sequential()
 
-model.add(Dense(units=10000, activation="sigmoid",input_dim=18))
+model.add(Dense(units=10000, activation="relu",input_dim=18))
 model.add(Dense(units=1, activation="sigmoid"))
 
 model.summary()
@@ -339,6 +339,20 @@ ann_viz(model, view=True, filename="network.gv", title="Shallow Network")
 
 model.compile(optimizer="adam", loss='binary_crossentropy', metrics="AUC")
 
-model.fit(x_train,y_train)
+history = model.fit(x=x_train, y=y_train, validation_data = '(x_val, y_val)' , epochs=20)
+
+training_loss = history.history['loss']
+val_loss = history.history['val_loss']
+
+# Create count of the number of epochs
+epoch_count = range(1, len(training_loss) + 1)
+
+# Visualize loss history
+plt.plot(epoch_count, training_loss, 'r--')
+plt.plot(epoch_count, val_loss, 'b-')
+plt.legend(['Training Loss', 'Validation Loss'])
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.show()
 
  
