@@ -12,7 +12,12 @@ import time
 from sklearn.model_selection import RandomizedSearchCV
 from keras.wrappers.scikit_learn import KerasClassifier
 from keras.models import Sequential
-from keras.layers import Dense, Dropout 
+from keras.layers import Dense, Dropout
+from keras.optimizers import Adam
+from tensorflow.keras import layers
+from tensorflow.keras import activations
+
+ 
 
 names=["class label", "lepton 1 pT", "lepton 1 eta", "lepton 1 phi",
                      "lepton 2 pT", "lepton 2 eta", "lepton 2 phi",
@@ -61,8 +66,9 @@ x_low=df.iloc[:,1:9]
 x_low = x_low.values
 
 #high-level features
-x_high=df.iloc[:,10:]
+x_high=df.iloc[:,9:19]
 x_high = x_high.values
+
 
 #target
 y = df["class label"].values
@@ -278,12 +284,13 @@ print("Best params: {}, MAE: {}".format(best_params, min_err)) """
 #In order to diminuish the time of searching of hyperparameters, given the high number of data and variables, i will use randomized searche more than others because in  most of the casese, the same accuracy is reached in less time
 
 
-
 from keras.models import Sequential
 from keras.layers import Dense, Dropout 
 from ann_visualizer.visualize import ann_viz
-# Hyperparameters
-""" def build_classifier(optimizer, units):
+
+
+""" # Hyperparameters
+def build_classifier(optimizer, units):
 
     NN=Sequential()
 
@@ -301,47 +308,44 @@ from ann_visualizer.visualize import ann_viz
 
 NN = KerasClassifier(build_fn=build_classifier)
 
-parameters ={'batch_size':[32,64],
+parameters ={'batch_size':[20, 32],
             'nb_epoch':[10,20,50],
             'optimizer':['adam','rmsprop','SGD'],
             'units':[300, 1000, 2000, 10000],
-            'learning_rate': [0.05, 0.005, 0.0005]
+            #'learning_rate': [0.05, 0.005, 0.0005]
             }
 
 grid_rndm= RandomizedSearchCV(estimator=NN, param_distributions=parameters, scoring='roc_auc', n_iter=20, n_jobs=-1, cv=3)
 
-# tune the hyperparameters via a randomized search
-start = time.time()
+# tune the hyperparameters via a randomized search, dropout regularization for reducing overfitting and improving the generalization of deep neural networks.
 grid_rndm.fit(x_train, y_train)
 # evaluate the best randomized searched model on the testing
 # data
-print("[INFO] randomized search took {:.2f} seconds".format(
-	time.time() - start))
-acc = grid_rndm.score(x_train, y_train)
-print("[INFO] grid search accuracy: {:.2f}%".format(acc * 100))
+print("[INFO] grid search AUC: {:.2f}%".format(grid_rndm.best_score_))
 print("[INFO] randomized search best parameters: {}".format(
-	grid_rndm.best_params_)) 
-
- """
-
+	grid_rndm.best_params_))  """
 
 # Hyperparameters
+learning_rate=0.001
 
 model = Sequential()
 
-model.add(Dense(units=10000, activation="relu",input_dim=18))
-model.add(Dense(units=1, activation="sigmoid"))
+activations.relu(x, alpha=0.1, max_value=None, threshold=0)
+model.add(Dense(units=1000, kernel_initializer='he_normal', activation="relu",input_dim=10))
+model.add(Dense(units=1, kernel_initializer='random_normal', activation="sigmoid"))
 
 model.summary()
 
 from ann_visualizer.visualize import ann_viz
 ann_viz(model, view=True, filename="network.gv", title="Shallow Network")
 
-model.compile(optimizer="adam", loss='binary_crossentropy', metrics="AUC")
+model.compile(optimizer=Adam(learning_rate), loss='binary_crossentropy', metrics="AUC")
 
-history = model.fit(x=x_train, y=y_train, validation_data = '(x_val, y_val)' , epochs=20)
+history = model.fit(x=xH_train, y=yH_train, batch_size=32, epochs=10)
 
-training_loss = history.history['loss']
+predictions = model.predict(x_test, batch_size=32)
+
+"""training_loss = history.history['loss']
 val_loss = history.history['val_loss']
 
 # Create count of the number of epochs
@@ -353,6 +357,8 @@ plt.plot(epoch_count, val_loss, 'b-')
 plt.legend(['Training Loss', 'Validation Loss'])
 plt.xlabel('Epoch')
 plt.ylabel('Loss')
-plt.show()
+plt.show() """
+
 
  
+
