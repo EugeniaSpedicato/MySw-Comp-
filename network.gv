@@ -9,70 +9,70 @@ digraph g {
 
 
 
-Input Layer (+8)"
+Input Layer"
 		rank=same
 		2
 		label="Shallow Network
 
 
 
-Input Layer (+8)"
+Input Layer"
 		rank=same
 		3
 		label="Shallow Network
 
 
 
-Input Layer (+8)"
+Input Layer"
 		rank=same
 		4
 		label="Shallow Network
 
 
 
-Input Layer (+8)"
+Input Layer"
 		rank=same
 		5
 		label="Shallow Network
 
 
 
-Input Layer (+8)"
+Input Layer"
 		rank=same
 		6
 		label="Shallow Network
 
 
 
-Input Layer (+8)"
+Input Layer"
 		rank=same
 		7
 		label="Shallow Network
 
 
 
-Input Layer (+8)"
+Input Layer"
 		rank=same
 		8
 		label="Shallow Network
 
 
 
-Input Layer (+8)"
+Input Layer"
 		rank=same
 		9
 		label="Shallow Network
 
 
 
-Input Layer (+8)"
+Input Layer"
 		rank=same
 		10
 		label="Shallow Network
 
 
 
-Input Layer (+8)"
+Input Layer"
 		rank=same
 	}
 	1 -> 11
