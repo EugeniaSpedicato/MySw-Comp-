@@ -4,4 +4,4 @@ The aim of the code is to find the best algorithm between a Boosted Decision Tre
 
 In the program.ipynb file there is the code in which i prepare the data set, tune the parameters through cross validation for both the BDT and NN and then evaluate the performance exploiting the AUC metric, which is a good one in classification problems, in particular when comparing different algortihms.
 
-I have trained the model using three different datasets: considering all the features, considering just the low-level ones and then just the low-level. This has been done in order to see to what extent the high-level features help the algorithm to learn.
+I have trained the model using three different datasets: considering all the features, considering just the low-level ones and then just the high-level. This has been done in order to see to what extent the high-level features help the algorithm to learn.
